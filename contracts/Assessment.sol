@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-//import "hardhat/console.sol";
-
 contract Assessment {
     address payable public owner;
     uint256 public balance;
@@ -56,5 +54,39 @@ contract Assessment {
 
         // emit the event
         emit Withdraw(_withdrawAmount);
+    }
+
+
+    function calculateMonthlySavings(uint256 investmentGoal, uint256 currentBalance, uint256 months) public pure returns (uint256) {
+        require(months > 0, "The number of months must be greater than zero");
+        require(investmentGoal > currentBalance, "Investment goal must be greater than current balance");
+        uint256 savingsNeeded = (investmentGoal - currentBalance) / months;
+        return savingsNeeded;
+    }
+    
+    function calculateReturn(string memory investmentType, uint256 investmentAmount, uint256 duration, uint256 timePeriod, uint256 desiredInterest) public pure returns (uint256) {
+        uint256 rate = 0;
+
+        if (keccak256(abi.encodePacked((investmentType))) == keccak256(abi.encodePacked(("Equity Funds")))) {
+            rate = 13;
+        } else if (keccak256(abi.encodePacked((investmentType))) == keccak256(abi.encodePacked(("Mutual Funds")))) {
+            rate = 13;
+        } else if (keccak256(abi.encodePacked((investmentType))) == keccak256(abi.encodePacked(("Stocks")))) {
+            rate = desiredInterest;
+        } else if (keccak256(abi.encodePacked((investmentType))) == keccak256(abi.encodePacked(("Gold")))) {
+            rate = desiredInterest;
+        } else {
+            revert("Invalid investment type");
+        }
+
+        uint256 totalReturn = 0;
+
+        if (keccak256(abi.encodePacked((investmentType))) == keccak256(abi.encodePacked(("Mutual Funds")))) {
+            totalReturn = investmentAmount * ((1 + rate / 100 / 12) ** duration);
+        } else {
+            totalReturn = investmentAmount * ((1 + rate / 100) ** timePeriod);
+        }
+
+        return totalReturn;
     }
 }
