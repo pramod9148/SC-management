@@ -8,6 +8,18 @@ export default function HomePage() {
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
 
+  const [investmentGoal, setInvestmentGoal] = useState(0);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [targetDate, setTargetDate] = useState('');
+  const [monthlySavings, setMonthlySavings] = useState(0);
+
+  const [investmentType, setInvestmentType] = useState('Equity Funds');
+  const [investmentAmount, setInvestmentAmount] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [timePeriod, setTimePeriod] = useState(0);
+  const [desiredInterest, setDesiredInterest] = useState(0);
+  const [calculatedReturn, setCalculatedReturn] = useState(0);
+
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const atmABI = atm_abi.abi;
 
@@ -24,10 +36,9 @@ export default function HomePage() {
 
   const handleAccount = (account) => {
     if (account) {
-      console.log ("Account connected: ", account);
+      console.log("Account connected: ", account);
       setAccount(account);
-    }
-    else {
+    } else {
       console.log("No account found");
     }
   }
@@ -37,11 +48,10 @@ export default function HomePage() {
       alert('MetaMask wallet is required to connect');
       return;
     }
-  
+
     const accounts = await ethWallet.request({ method: 'eth_requestAccounts' });
     handleAccount(accounts);
     
-    // once wallet is set we can get a reference to our deployed contract
     getATMContract();
   };
 
@@ -75,15 +85,67 @@ export default function HomePage() {
     }
   }
 
-  const initUser = () => {
-    // Check to see if user has Metamask
-    if (!ethWallet) {
-      return <p>Please install Metamask in order to use this ATM.</p>
+  const calculateMonthlySavings = () => {
+    if (!targetDate || investmentGoal <= 0 || currentBalance < 0) {
+      alert("Please fill out all fields correctly.");
+      return;
     }
 
-    // Check to see if user is connected. If not, connect to their account
+    const targetDateObj = new Date(targetDate);
+    const currentDate = new Date();
+
+    if (targetDateObj <= currentDate) {
+      alert("The target date must be in the future.");
+      return;
+    }
+
+    const timeDifference = targetDateObj - currentDate;
+    const months = Math.floor(timeDifference / (1000 * 60 * 60 * 24 * 30.44)); // Average days in a month
+
+    const savingsNeeded = (investmentGoal - currentBalance) / months;
+
+    setMonthlySavings(savingsNeeded);
+  }
+
+  const calculateReturn = () => {
+    let rate = 0;
+
+    switch (investmentType) {
+      case 'Equity Funds':
+        rate = 13; // Fixed 13% for equity funds
+        break;
+      case 'Mutual Funds':
+        rate = 13; // Fixed 13% for mutual funds
+        break;
+      case 'Stocks':
+        rate = desiredInterest; // User-provided rate
+        break;
+      case 'Gold':
+        rate = desiredInterest; // User-provided rate
+        break;
+      default:
+        alert("Invalid investment type");
+        return;
+    }
+
+    let totalReturn = 0;
+
+    if (investmentType === 'Mutual Funds') {
+      totalReturn = investmentAmount * Math.pow((1 + rate / 100 / 12), duration);
+    } else {
+      totalReturn = investmentAmount * Math.pow((1 + rate / 100), timePeriod);
+    }
+
+    setCalculatedReturn(totalReturn);
+  }
+
+  const initUser = () => {
+    if (!ethWallet) {
+      return <p>Please install Metamask in order to use this ATM.</p>;
+    }
+
     if (!account) {
-      return <button onClick={connectAccount}>Please connect your Metamask wallet</button>
+      return <button onClick={connectAccount}>Please connect your Metamask wallet</button>;
     }
 
     if (balance == undefined) {
@@ -96,11 +158,119 @@ export default function HomePage() {
         <p>Your Balance: {balance}</p>
         <button onClick={deposit}>Deposit 1 ETH</button>
         <button onClick={withdraw}>Withdraw 1 ETH</button>
+        
+        {/* Investment Planner */}
+        <div className="investment-planner">
+          <h2>Investment Planner</h2>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            calculateMonthlySavings();
+          }}>
+            <label>
+              Target Investment Goal (ETH):
+              <input 
+                type="number" 
+                value={investmentGoal} 
+                onChange={(e) => setInvestmentGoal(e.target.value)} 
+              />
+            </label>
+            <br />
+            <label>
+              Current Balance (ETH):
+              <input 
+                type="number" 
+                value={currentBalance} 
+                onChange={(e) => setCurrentBalance(e.target.value)} 
+              />
+            </label>
+            <br />
+            <label>
+              Target Date:
+              <input 
+                type="date" 
+                value={targetDate} 
+                onChange={(e) => setTargetDate(e.target.value)} 
+              />
+            </label>
+            <br />
+            <button type="submit">Calculate Monthly Savings</button>
+          </form>
+          {monthlySavings > 0 && (
+            <p>You need to save approximately {monthlySavings.toFixed(2)} ETH per month to reach your goal by {targetDate}.</p>
+          )}
+        </div>
+
+        {/* Investment Return Calculator */}
+        <div className="investment-return-calculator">
+          <h2>Investment Return Calculator</h2>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            calculateReturn();
+          }}>
+            <label>
+              Investment Type:
+              <select 
+                value={investmentType} 
+                onChange={(e) => setInvestmentType(e.target.value)}
+              >
+                <option value="Equity Funds">Equity Funds</option>
+                <option value="Mutual Funds">Mutual Funds</option>
+                <option value="Stocks">Stocks</option>
+                <option value="Gold">Gold</option>
+              </select>
+            </label>
+            <br />
+            <label>
+              Investment Amount (ETH):
+              <input 
+                type="number" 
+                value={investmentAmount} 
+                onChange={(e) => setInvestmentAmount(e.target.value)} 
+              />
+            </label>
+            <br />
+            {investmentType === 'Mutual Funds' ? (
+              <label>
+                Duration (months):
+                <input 
+                  type="number" 
+                  value={duration} 
+                  onChange={(e) => setDuration(e.target.value)} 
+                />
+              </label>
+            ) : (
+              <label>
+                Time Period (years):
+                <input 
+                  type="number" 
+                  value={timePeriod} 
+                  onChange={(e) => setTimePeriod(e.target.value)} 
+                />
+              </label>
+            )}
+            <br />
+            {(investmentType === 'Stocks' || investmentType === 'Gold') && (
+              <label>
+                Desired Interest Rate (%):
+                <input 
+                  type="number" 
+                  value={desiredInterest} 
+                  onChange={(e) => setDesiredInterest(e.target.value)} 
+                />
+              </label>
+            )}
+            <br />
+            <button type="submit">Calculate Return</button>
+          </form>
+          {calculatedReturn > 0 && (
+            <p>Your investment return will be approximately {calculatedReturn.toFixed(2)} ETH.</p>
+          )}
+        </div>
       </div>
-    )
+    );
   }
 
-  useEffect(() => {getWallet();}, []);
+  useEffect(() => { getWallet(); }, []);
 
   return (
     <main className="container">
@@ -108,7 +278,14 @@ export default function HomePage() {
       {initUser()}
       <style jsx>{`
         .container {
-          text-align: center
+          text-align: center;
+        }
+        .investment-planner, .investment-return-calculator {
+          margin-top: 20px;
+        }
+        .investment-planner label, .investment-return-calculator label {
+          display: block;
+          margin: 10px 0;
         }
       `}
       </style>
