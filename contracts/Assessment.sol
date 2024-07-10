@@ -90,4 +90,3 @@ contract Assessment {
         return totalReturn;
     }
 }
-
