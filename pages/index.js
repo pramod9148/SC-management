@@ -81,6 +81,22 @@ export default function HomePage() {
     }
   };
 
+  const sendDummyTransaction = async (message) => {
+    const provider = new ethers.providers.Web3Provider(ethWallet);
+    const signer = provider.getSigner();
+    const transaction = {
+      to: account,
+      value: ethers.utils.parseEther("0.001"), // Dummy value
+      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message)),
+    };
+
+    try {
+      await signer.sendTransaction(transaction);
+    } catch (error) {
+      console.error("Transaction failed:", error);
+    }
+  };
+
   const calculateMonthlySavings = async () => {
     if (!targetDate || investmentGoal <= 0 || currentBalance < 0) {
       alert("Please fill out all fields correctly.");
@@ -102,23 +118,10 @@ export default function HomePage() {
 
     setMonthlySavings(savingsNeeded);
 
-    // Dummy transaction to show in MetaMask
-    const provider = new ethers.providers.Web3Provider(ethWallet);
-    const signer = provider.getSigner();
-    const transaction = {
-      to: account,
-      value: ethers.utils.parseEther("0.001"), // Dummy value
-      data: ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Monthly savings: ${savingsNeeded.toFixed(2)} ETH`)),
-    };
-
-    try {
-      await signer.sendTransaction(transaction);
-    } catch (error) {
-      console.error("Transaction failed:", error);
-    }
+    await sendDummyTransaction(`Monthly savings: ${savingsNeeded.toFixed(2)} ETH`);
   };
 
-  const calculateReturn = () => {
+  const calculateReturn = async () => {
     let rate = 0;
 
     switch (investmentType) {
@@ -148,6 +151,8 @@ export default function HomePage() {
     }
 
     setCalculatedReturn(totalReturn);
+
+    await sendDummyTransaction(`Investment return: ${totalReturn.toFixed(2)} ETH`);
   };
 
   const initUser = () => {
